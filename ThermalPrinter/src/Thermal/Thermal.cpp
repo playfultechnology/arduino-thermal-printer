@@ -1,24 +1,27 @@
+/**
+ * Arduino library implementing the ESC/POS interface for serial
+ * control of thermal receipt printer. For list of commands, see
+ * https://reference.epson-biz.com/modules/ref_escpos/index.php?content_id=52
+ */
+
 #include <Arduino.h>
 #include "Thermal.h"
 
-
-
 Thermal::Thermal(int RX_Pin, int TX_Pin, long baudRate) : SoftwareSerial(RX_Pin, TX_Pin) {
-
+	// Set up interface to Arduino
 	pinMode(RX_Pin, INPUT);
 	pinMode(TX_Pin, OUTPUT);
 	begin(baudRate);
-
+	// Define zero terminating character
 	int zero = 0;
-
-	heatTime = 80; // 80 is default from page 23 of datasheet. Controls speed of printing and darkness
-	heatInterval = 2; // 2 is default from page 23 of datasheet. Controls speed of printing and darkness
-	printDensity = 15; // Not sure what the defaut is. Testing shows the max helps darken text. From page 23.
-	printBreakTime = 15; // Not sure what the defaut is. Testing shows the max helps darken text. From page 23.
-
+	// Define thermal settings
+	heatTime = 80; // Controls speed of printing and darkness
+	heatInterval = 2; // Controls speed of printing and darkness
+	printDensity = 15; // Testing shows the max helps darken text
+	printBreakTime = 15; // Testing shows the max helps darken text
 	setHeatTime(heatTime);
 	setPrintDensity(printDensity);
-
+	// Send commands to intialise printer format 
 	setDefault();
 }
 
@@ -46,26 +49,20 @@ void Thermal::setBarcodeHeight(int val) {
 
 void Thermal::printBarcode(char * text){
 	writeBytes(29, 107, 0); // GS, K, m!
-  
   for(int i = 0; i < strlen(text); i ++){
-    write(text[i]); //Data
+    write(text[i]); // Data
   }
- 
-  write(zero); //Terminator
-  
-  delay(3000); //For some reason we can't immediately have line feeds here
+  write(zero); // Terminator
+  delay(3000); // For some reason we can't immediately have line feeds here
   feed(2);
 }
 
 void Thermal::printFancyBarcode(char * text){
   writeBytes(29, 107, 4); // GS, K, Fancy!
-  
   for(int i = 0; i < strlen(text); i ++){
     write(text[i]); //Data
   }
- 
   write(zero); //Terminator
-  
   delay(3000); //For some reason we can't immediately have line feeds here
   feed(2);
 }
@@ -110,18 +107,17 @@ void Thermal::boldOn() {
 
 void Thermal::boldOff() {
 	writeBytes(27, 69, 0);
-	if (linefeedneeded)
+	if (linefeedneeded) {
 		feed();
+	}
 	linefeedneeded = false;
 }
 
 void Thermal::justify(char value) {
 	uint8_t pos = 0;
-
-	if(value == 'l' || value == 'L') pos = 0;
-	if(value == 'c' || value == 'C') pos = 1;
-	if(value == 'r' || value == 'R') pos = 2;
-  
+	if(value == 'l' || value == 'L') { pos = 0; }
+	if(value == 'c' || value == 'C') { pos = 1; }
+	if(value == 'r' || value == 'R') { pos = 2; }
 	writeBytes(0x1B, 0x61, pos);
 }
 
@@ -133,15 +129,10 @@ void Thermal::feed(uint8_t x) {
 
 void Thermal::setSize(char value) {
 	int size = 0;
-
-	if(value == 's' || value == 'S') size = 0;
-	if(value == 'm' || value == 'M') size = 10;
-	if(value == 'l' || value == 'L') size = 25;
-  
+	if(value == 's' || value == 'S') { size = 0; }
+	if(value == 'm' || value == 'M') { size = 10; }
+	if(value == 'l' || value == 'L') { size = 25; }
 	writeBytes(29, 33, size, 10);
-	// if (linefeedneeded)
-	//  println("lfn"); //feed();
-	//linefeedneeded = false;
 }
 
 void Thermal::underlineOff() {
@@ -152,18 +143,10 @@ void Thermal::underlineOn() {
 	writeBytes(27, 45, 1);
 }
 
-void Thermal::printBitmap(uint8_t w, uint8_t h,  const uint8_t *bitmap) {
-	/*
-	writeBytes(18, 42, h, w/8);
-	for (uint16_t i=0; i<(w/8) * h; i++) {
-		write(pgm_read_byte(bitmap + i));
-	}
-	*/
+void Thermal::printBitmap(uint8_t w, uint8_t h, const uint8_t *bitmap) {
 	int rowBytes, rowBytesClipped, rowStart, chunkHeight, chunkHeightLimit, x, y, i;
-
   rowBytes = (w + 7) / 8; // Round up to next byte boundary
   rowBytesClipped = (rowBytes >= 48) ? 48 : rowBytes; // 384 pixels max width
-
 	chunkHeightLimit = 256 / rowBytesClipped;
 	// Assume 256 byte printer buffer
   if(chunkHeightLimit > 255) { chunkHeightLimit = 255; }
@@ -174,7 +157,7 @@ void Thermal::printBitmap(uint8_t w, uint8_t h,  const uint8_t *bitmap) {
     chunkHeight = h - rowStart;
     if(chunkHeight > chunkHeightLimit) chunkHeight = chunkHeightLimit;
 
-		//Write device control command
+		// Write device control command
     writeBytes(18, '*', chunkHeight, rowBytesClipped);
 
     for(y=0; y < chunkHeight; y++) {
@@ -191,10 +174,9 @@ void Thermal::wake() {
 }
 
 void Thermal::sleep() {
-		writeBytes(27, 61, 0);
+	writeBytes(27, 61, 0);
 }
 
-////////////////////// not working?
 void Thermal::tab() {
 	write(9);
 }
@@ -204,43 +186,41 @@ void Thermal::setCharSpacing(int spacing) {
 }
 
 void Thermal::setLineHeight(int val) {
-	writeBytes(27, 51, val); // default is 32
+	writeBytes(27, 51, val); // Default is 32
 }
 
 void Thermal::setHeatTime(int vHeatTime) {
 	heatTime = vHeatTime;
 	write(27);
 	write(55);
-	write(7); //Default 64 dots = 8*('7'+1)
-	write(heatTime); //Default 80 or 800us
-	write(heatInterval); //Default 2 or 20us	
+	write(7); // Default 64 dots = 8*('7'+1)
+	write(heatTime); // Default 80 or 800us
+	write(heatInterval); // Default 2 or 20us	
 }
 
 void Thermal::setHeatInterval(int vHeatInterval) {
 	heatInterval = vHeatInterval;
 	write(27);
 	write(55);
-	write(7); //Default 64 dots = 8*('7'+1)
-	write(heatTime); //Default 80 or 800us
-	write(heatInterval); //Default 2 or 20us	
+	write(7); // Default 64 dots = 8*('7'+1)
+	write(heatTime); // Default 80 or 800us
+	write(heatInterval); // Default 2 or 20us	
 }
 
 void Thermal::setPrintDensity(char vPrintDensity) {
-
-	//Modify the print density and timeout
+	// Modify the print density and timeout
 	printDensity = vPrintDensity;
 	write(18);
 	write(35);
 	int printSetting = (printDensity<<4) | printBreakTime;
-	write(printSetting); //Combination of printDensity and printBreakTime
+	write(printSetting); // Combination of printDensity and printBreakTime
 }
 
 void Thermal::setPrintBreakTime(char vPrintBreakTime) {
-
-	//Modify the print density and timeout
+	// Modify the print density and timeout
 	printBreakTime = vPrintBreakTime;
 	write(18);
 	write(35);
  	int printSetting = (printDensity<<4) | printBreakTime;
-	write(printSetting); //Combination of printDensity and printBreakTime
+	write(printSetting); // Combination of printDensity and printBreakTime
 }
