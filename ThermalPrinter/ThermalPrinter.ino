@@ -1,7 +1,7 @@
 // INCLUDES
-// Create a serial connection between Arudino and printer
+// Create a serial connection between Arduino and printer
 #include <SoftwareSerial.h>
-// Modified from https://github.com/bildr-org/Thermal-Printer
+// Thermal printer library modified from https://github.com/bildr-org/Thermal-Printer
 #include "src/Thermal/Thermal.h"
 // Bitmap image data
 #include "image.h"
@@ -15,14 +15,13 @@ Thermal printer(2, 3, 9600);
 void setup(){
   // Set font size [S,M,L]
   printer.setSize('S');
+  
   // Print the specified line of text 
-  printer.println("STOP FIDDLING WITH IT, DOUGIE!"); //print line
+  printer.println("STOP FIDDLING WITH IT, DOUGIE!");
 
-  // Print the image defined in image.h:
+  // Print a bitmap image (defined in image.h):
   printer.printBitmap(image_width, image_height, image_data);
 }
 
 void loop(){
- 
- 
 }
