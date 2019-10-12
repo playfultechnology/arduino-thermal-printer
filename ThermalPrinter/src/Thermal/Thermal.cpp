@@ -21,7 +21,7 @@ Thermal::Thermal(int RX_Pin, int TX_Pin, long baudRate) : SoftwareSerial(RX_Pin,
 	printBreakTime = 15; // Testing shows the max helps darken text
 	setHeatTime(heatTime);
 	setPrintDensity(printDensity);
-	// Send commands to intialise printer format 
+	// Initialise printer settings 
 	setDefault();
 }
 
