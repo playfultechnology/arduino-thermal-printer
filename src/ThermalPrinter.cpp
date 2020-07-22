@@ -8,11 +8,11 @@
 #include "ThermalPrinter.h"
 
 namespace PlayfulTechnology {
-	ThermalPrinter::ThermalPrinter(int RX_Pin, int TX_Pin, long baudRate) : SoftwareSerial(RX_Pin, TX_Pin) {
-		// Set up interface to Arduino
-		pinMode(RX_Pin, INPUT);
-		pinMode(TX_Pin, OUTPUT);
-		begin(baudRate);
+	ThermalPrinter::ThermalPrinter(Stream &s) {
+		serial = &s;
+	}
+
+	void ThermalPrinter::init() {
 		// Define zero terminating character
 		int zero = 0;
 		// Define thermal settings
@@ -22,8 +22,13 @@ namespace PlayfulTechnology {
 		printBreakTime = 15; // Testing shows the max helps darken text
 		setHeatTime(heatTime);
 		setPrintDensity(printDensity);
-		// Initialise printer settings 
+		// Set default printer settings 
 		setDefault();
+	}
+
+
+	void ThermalPrinter::setSerial(Stream &s){
+		serial = &s;
 	}
 
 	void ThermalPrinter::setDefault() {
@@ -51,9 +56,9 @@ namespace PlayfulTechnology {
 	void ThermalPrinter::printBarcode(char * text){
 		writeBytes(29, 107, 0); // GS, K, m!
 		for(int i = 0; i < strlen(text); i ++){
-			write(text[i]); // Data
+			serial->write(text[i]); // Data
 		}
-		write(zero); // Terminator
+		serial->write(zero); // Terminator
 		delay(3000); // For some reason we can't immediately have line feeds here
 		feed(2);
 	}
@@ -61,29 +66,29 @@ namespace PlayfulTechnology {
 	void ThermalPrinter::printFancyBarcode(char * text){
 		writeBytes(29, 107, 4); // GS, K, Fancy!
 		for(int i = 0; i < strlen(text); i ++){
-			write(text[i]); //Data
+			serial->write(text[i]); //Data
 		}
-		write(zero); //Terminator
+		serial->write(zero); //Terminator
 		delay(3000); //For some reason we can't immediately have line feeds here
 		feed(2);
 	}
 
 	void ThermalPrinter::writeBytes(uint8_t a, uint8_t b) {
-		write(a);
-		write(b);
+		serial->write(a);
+		serial->write(b);
 	}
 
 	void ThermalPrinter::writeBytes(uint8_t a, uint8_t b, uint8_t c) {
-		write(a);
-		write(b);
-		write(c);
+		serial->write(a);
+		serial->write(b);
+		serial->write(c);
 	}
 
 	void ThermalPrinter::writeBytes(uint8_t a, uint8_t b, uint8_t c, uint8_t d) {
-		write(a);
-		write(b);
-		write(c);
-		write(d);
+		serial->write(a);
+		serial->write(b);
+		serial->write(c);
+		serial->write(d);
 	}
 
 	void ThermalPrinter::inverseOn() {
@@ -124,7 +129,7 @@ namespace PlayfulTechnology {
 
 	void ThermalPrinter::feed(uint8_t x) {
 		while (x--) {
-			write(10);
+			serial->write(10);
 		}
 	}
 
@@ -143,6 +148,15 @@ namespace PlayfulTechnology {
 	void ThermalPrinter::underlineOn() {
 		writeBytes(27, 45, 1);
 	}
+
+	void ThermalPrinter::print(char * text) {
+		serial->print(text);
+	}
+	void ThermalPrinter::println(char * text) {
+		serial->println(text);
+	}
+
+
 
 	void ThermalPrinter::printBitmap(uint8_t w, uint8_t h, const uint8_t *bitmap) {
 		int rowBytes, rowBytesClipped, rowStart, chunkHeight, chunkHeightLimit, x, y, i;
@@ -163,7 +177,7 @@ namespace PlayfulTechnology {
 
 			for(y=0; y < chunkHeight; y++) {
 				for(x=0; x < rowBytesClipped; x++, i++) {
-					write(pgm_read_byte(bitmap + i));
+					serial->write(pgm_read_byte(bitmap + i));
 				}
 				i += rowBytes - rowBytesClipped;
 			}
@@ -179,7 +193,7 @@ namespace PlayfulTechnology {
 	}
 
 	void ThermalPrinter::tab() {
-		write(9);
+		serial->write(9);
 	}
 
 	void ThermalPrinter::setCharSpacing(int spacing) {
@@ -192,37 +206,37 @@ namespace PlayfulTechnology {
 
 	void ThermalPrinter::setHeatTime(int vHeatTime) {
 		heatTime = vHeatTime;
-		write(27);
-		write(55);
-		write(7); // Default 64 dots = 8*('7'+1)
-		write(heatTime); // Default 80 or 800us
-		write(heatInterval); // Default 2 or 20us	
+		serial->write(27);
+		serial->write(55);
+		serial->write(7); // Default 64 dots = 8*('7'+1)
+		serial->write(heatTime); // Default 80 or 800us
+		serial->write(heatInterval); // Default 2 or 20us	
 	}
 
 	void ThermalPrinter::setHeatInterval(int vHeatInterval) {
 		heatInterval = vHeatInterval;
-		write(27);
-		write(55);
-		write(7); // Default 64 dots = 8*('7'+1)
-		write(heatTime); // Default 80 or 800us
-		write(heatInterval); // Default 2 or 20us	
+		serial->write(27);
+		serial->write(55);
+		serial->write(7); // Default 64 dots = 8*('7'+1)
+		serial->write(heatTime); // Default 80 or 800us
+		serial->write(heatInterval); // Default 2 or 20us	
 	}
 
 	void ThermalPrinter::setPrintDensity(char vPrintDensity) {
 		// Modify the print density and timeout
 		printDensity = vPrintDensity;
-		write(18);
-		write(35);
+		serial->write(18);
+		serial->write(35);
 		int printSetting = (printDensity<<4) | printBreakTime;
-		write(printSetting); // Combination of printDensity and printBreakTime
+		serial->write(printSetting); // Combination of printDensity and printBreakTime
 	}
 
 	void ThermalPrinter::setPrintBreakTime(char vPrintBreakTime) {
 		// Modify the print density and timeout
 		printBreakTime = vPrintBreakTime;
-		write(18);
-		write(35);
+		serial->write(18);
+		serial->write(35);
 		int printSetting = (printDensity<<4) | printBreakTime;
-		write(printSetting); // Combination of printDensity and printBreakTime
+		serial->write(printSetting); // Combination of printDensity and printBreakTime
 	}
 }

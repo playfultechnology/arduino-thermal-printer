@@ -2,14 +2,16 @@
 #define Thermal_h
 
 #include <Arduino.h>
-#include <SoftwareSerial.h>
 
 namespace PlayfulTechnology {
-	class ThermalPrinter : public SoftwareSerial {
+	class ThermalPrinter {
 
 		public:
 			// c'tor
-			ThermalPrinter(int, int, long);
+			ThermalPrinter(Stream &s);
+			
+			void setSerial(Stream &s);
+			void init();
 			
 			void setDefault();
 			void setHeatTime(int vHeatTime);
@@ -37,6 +39,8 @@ namespace PlayfulTechnology {
 			void sleep();
 			void wake();
 			void tab();
+			void print(char * text);
+			void println(char * text);
 			
 			// Barcodes
 			void printBarcode(char * text);
@@ -47,6 +51,8 @@ namespace PlayfulTechnology {
 			void printBitmap(uint8_t w, uint8_t h,  const uint8_t *bitmap);
 
 		private:
+			Stream *serial;
+		
 			boolean linefeedneeded;
 
 			// Helper functions

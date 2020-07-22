@@ -10,9 +10,16 @@
 // Initialise printer object with specified Rx, Tx pins and Baud Rate
 // Printer Tx -> Arduino Rx = Blue wire to Pin 2
 // Arduino Tx -> Printer Rx = Green wire to Pin 3
-PlayfulTechnology::ThermalPrinter printer(2, 3, 9600); 
+SoftwareSerial Serial2(2,3);
+PlayfulTechnology::ThermalPrinter printer(Serial2); 
 
 void setup(){
+	// Start soft serial connection to communicate between Arduino and the printer
+	Serial2.begin(9600);
+
+  // Initialise the printer settings
+  printer.init();
+
   // Set font size [S,M,L]
   printer.setSize('S');
   
