@@ -189,7 +189,7 @@ namespace PlayfulTechnology {
 				i += rowBytes - rowBytesClipped;
 			}
 			// Delay at the end of each "chunk" of lines to give the printer buffer chance to catch up
-			delay(100);
+			delay(10);
 		}
 	}
 
