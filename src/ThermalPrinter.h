@@ -48,7 +48,7 @@ namespace PlayfulTechnology {
 			void setBarcodeHeight(int val);
 
 			// Images
-			void printBitmap(uint8_t w, uint8_t h,  const uint8_t *bitmap);
+			void printBitmap(uint16_t w, uint16_t h,  const uint8_t *bitmap);
 
 		private:
 			Stream *serial;

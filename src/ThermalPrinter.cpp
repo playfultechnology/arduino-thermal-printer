@@ -157,30 +157,39 @@ namespace PlayfulTechnology {
 	}
 
 
-
-	void ThermalPrinter::printBitmap(uint8_t w, uint8_t h, const uint8_t *bitmap) {
+	void ThermalPrinter::printBitmap(uint16_t w, uint16_t h, const uint8_t *bitmap) {
 		int rowBytes, rowBytesClipped, rowStart, chunkHeight, chunkHeightLimit, x, y, i;
-		rowBytes = (w + 7) / 8; // Round up to next byte boundary
-		rowBytesClipped = (rowBytes >= 48) ? 48 : rowBytes; // 384 pixels max width
+		// Round to the nearest whole byte boundary
+		rowBytes = (w + 7) / 8;
+		// Printer has a max width of 384 pixels, i.e. 48 bytes of data in each row
+		rowBytesClipped = (rowBytes >= 48) ? 48 : rowBytes;
+		// To decide how many rows to send in each chunk, assume that printer has a buffer size of 256 bytes
+		// So, how many rows of data can fit into 256 bytes?
 		chunkHeightLimit = 256 / rowBytesClipped;
 		// Assume 256 byte printer buffer
 		if(chunkHeightLimit > 255) { chunkHeightLimit = 255; }
+		// Ensure we send at least one row in each chunk
 		else if(chunkHeightLimit < 1) { chunkHeightLimit = 1; }
-
+		// Loop over all the image data
 		for(i=rowStart=0; rowStart < h; rowStart += chunkHeightLimit) {
-			// Issue up to chunkHeightLimit rows at a time:
+			// Take a "chunk" of all the remaining rows
 			chunkHeight = h - rowStart;
-			if(chunkHeight > chunkHeightLimit) chunkHeight = chunkHeightLimit;
-
+			// If there are too many rows in our chunk, reduce it down to the max chunk size
+			if(chunkHeight > chunkHeightLimit) { chunkHeight = chunkHeightLimit; }
 			// Write device control command
 			writeBytes(18, '*', chunkHeight, rowBytesClipped);
-
+			// Loop over each row in the chunk we've taken
 			for(y=0; y < chunkHeight; y++) {
+				// Loop over each column in the row
 				for(x=0; x < rowBytesClipped; x++, i++) {
+					// Retrieve the corresponding byte of data from the image array
 					serial->write(pgm_read_byte(bitmap + i));
 				}
+				// When we get to the end of the line, add on however many pixels were skipped off the end before the 8-byte boundary
 				i += rowBytes - rowBytesClipped;
 			}
+			// Delay at the end of each "chunk" of lines to give the printer buffer chance to catch up
+			delay(100);
 		}
 	}
 
