@@ -156,6 +156,44 @@ namespace PlayfulTechnology {
 		serial->println(text);
 	}
 
+	void ThermalPrinter::printnowordbreak(char* text, int maxCharactersPerLine) {
+		int textLength = strlen(text);
+
+		int start = 0;
+		int end = maxCharactersPerLine;
+
+		while (start < textLength) {
+			// Check if the remaining text fits in the line
+			if (textLength - start <= maxCharactersPerLine) {
+				end = textLength;
+			}
+			else {
+				// Check if the end index is in the middle of a word
+				while (end > start && text[end] != ' ' && text[end] != '\n') {
+					end--;
+				}
+
+				if (end == start) {
+					// Handle the case where a word is longer than the line
+					end = start + maxCharactersPerLine;
+				}
+			}
+
+			// Create a chunk of text to print
+			char chunk[maxCharactersPerLine + 1]; // +1 for the null terminator
+			strncpy(chunk, &text[start], end - start);
+			chunk[end - start] = '\0'; // Null-terminate the chunk
+
+			// Use the provided serial object to print the chunk
+			serial->println(chunk);
+
+			start = end;
+			while (start < textLength && (text[start] == ' ' || text[start] == '\n')) {
+				start++; // Skip leading spaces for the next line
+			}
+			end = start + maxCharactersPerLine;
+		}
+	}
 
 	void ThermalPrinter::printBitmap(uint16_t w, uint16_t h, const uint8_t *bitmap) {
 		int rowBytes, rowBytesClipped, rowStart, chunkHeight, chunkHeightLimit, x, y, i;

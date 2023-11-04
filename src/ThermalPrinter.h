@@ -41,6 +41,7 @@ namespace PlayfulTechnology {
 			void tab();
 			void print(char * text);
 			void println(char * text);
+			void printnowordbreak(char* text, int maxCharactersPerLine);
 			
 			// Barcodes
 			void printBarcode(char * text);
